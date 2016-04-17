@@ -5,6 +5,7 @@ using System;
 public class WorldManagerScript : MonoBehaviour {
 
 	public GameObject pillar; // pillar display object
+	public GameObject[] Event;
 	public int spectrumRate; // "1 / spectrumRate" give the number of spectrum refresh per second 
 	public float maxAditionalHeight;
 	public int elevationStrenght;
@@ -17,14 +18,16 @@ public class WorldManagerScript : MonoBehaviour {
 	private AudioSource audioSound; // use for stop/play the sound.
 	private AudioSource audioAnalyse; // this variable can take the sound at T + 1 (T = 1 / spectrumRate)
 	private float[] spectrum; // spectre of audioAnalyse
-	private float[] lastPos;
+	private float[] lastPos; //previous position af all 
 
 	private float currentTime; // current time betwen 0 and "1 / spectrumRate"
+	private float timePosition;  // give % of current time betwen 0 and "1 / spectrumRate"
 
 	void Start () {
 		audioSound = GetComponents<AudioSource>()[0];
 		audioSound.Pause ();
 		audioAnalyse = GetComponents<AudioSource>()[1];
+		audioAnalyse.Play ();
 		spectrum = new float[spectreSize];
 		lastPos = new float[nbPillar];
 		currentTime = 0;
@@ -36,6 +39,8 @@ public class WorldManagerScript : MonoBehaviour {
 			map [i] = (GameObject)Instantiate (pillar, new Vector3(i * pillarScale, heightPillar, 0), pillar.transform.rotation);
 			map[i].transform.localScale -= new Vector3 (1 - pillarScale, 0, 0);
 		}
+		for (int i = 0; i < Event.Length; ++i)
+			Event [i].GetComponent<WorldEventScript> ().sendData (ref map, ref spectrum);
 	}
 
 	void Update () {
@@ -49,31 +54,48 @@ public class WorldManagerScript : MonoBehaviour {
 		} else {
 			currentTime += Time.deltaTime;
 		}
-		if (audioSound.isPlaying)
-			ground0 ();
+		if (audioSound.isPlaying) {
+			if (currentTime > (float)1 / spectrumRate)
+				currentTime = (float)1 / spectrumRate;
+			timePosition = currentTime / ((float)1 / spectrumRate) ;
+			ground1 ();
+		}
+		for (int i = 0; i < Event.Length; ++i)
+			Event [i].GetComponent<WorldEventScript> ().update ();
 	}
 
 	// ground moving function
 
 	private void ground0()
 	{
-		if (currentTime > (float)1 / spectrumRate)
-			currentTime = (float)1 / spectrumRate;
-		
-		float timePosition = currentTime / ((float)1 / spectrumRate) ; // give % of current time betwen 0 and "1 / spectrumRate"
-
-		//position all pillar
 		for (int i = 0; i < nbPillar; ++i) {
-			map [i].transform.position = new Vector3 (map [i].transform.position.x, getYposition(i, timePosition), 0);
+			map [i].transform.position = new Vector3 (map [i].transform.position.x, getYposition0(i), 0);
 		}
 	}
 
-	// manage the y position of pillar in function of refresh time
+	private void ground1()
+	{
+		for (int i = nbPillar / 2 - 1; i >= 0; --i) {
+			map [i].transform.position = new Vector3 (map [i].transform.position.x, getYposition1(i), 0);
+		}
+		for (int i = nbPillar / 2; i < nbPillar; ++i)
+			map [i].transform.position = new Vector3 (map [i].transform.position.x, map[(nbPillar / 2 - 1) - (i - (nbPillar / 2))].transform.position.y, 0);
+	}
 
-	private float getYposition(int i, float timePosition)
+	// manage the y position of pillar with respect to refresh time
+
+	private float getYposition0(int i)
 	{
 		float a;
 		a = (heightPillar + ((1 - Mathf.Exp (-spectrum [i] * elevationStrenght)) * maxAditionalHeight)) - lastPos [i];
+		return (lastPos [i] + a * timePosition);
+		//return (heightPillar + (timePosition * ((1 - Mathf.Exp (-spectrum [i] * elevationStrenght)) * maxAditionalHeight)) );
+	}
+
+	private float getYposition1(int i)
+	{
+		float a;
+		a = (heightPillar + ((1 - Mathf.Exp (-spectrum [(nbPillar / 2 - 1) - i] * elevationStrenght)) * maxAditionalHeight)) - lastPos [i];
 		return (lastPos [i] + a * timePosition);
 		//return (heightPillar + (timePosition * ((1 - Mathf.Exp (-spectrum [i] * elevationStrenght)) * maxAditionalHeight)) );
 	}
