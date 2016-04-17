@@ -40,7 +40,8 @@ public class WorldManagerScript : MonoBehaviour {
 			map[i].transform.localScale -= new Vector3 (1 - pillarScale, 0, 0);
 		}
 		for (int i = 0; i < Event.Length; ++i)
-			Event [i].GetComponent<WorldEventScript> ().sendData (ref map, ref spectrum);
+			Event [i].GetComponent<AEvent> ().sendData
+			(ref map, ref spectrum);
 	}
 
 	void Update () {
@@ -61,7 +62,7 @@ public class WorldManagerScript : MonoBehaviour {
 			ground1 ();
 		}
 		for (int i = 0; i < Event.Length; ++i)
-			Event [i].GetComponent<WorldEventScript> ().update ();
+			Event [i].GetComponent<AEvent> ().update ();
 	}
 
 	// ground moving function
