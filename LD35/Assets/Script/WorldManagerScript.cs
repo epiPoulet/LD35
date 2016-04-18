@@ -25,9 +25,11 @@ public class WorldManagerScript : MonoBehaviour {
 
 	void Start () {
 		audioSound = GetComponents<AudioSource>()[0];
+        audioSound.clip = DataKeeper.Clip;
 		audioSound.Pause ();
 		audioAnalyse = GetComponents<AudioSource>()[1];
-		audioAnalyse.Play ();
+        audioAnalyse.clip = DataKeeper.Clip;
+        audioAnalyse.Play ();
 		spectrum = new float[spectreSize];
 		lastPos = new float[nbPillar];
 		currentTime = 0;
